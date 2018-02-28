@@ -45,12 +45,11 @@ public class Aluno implements Comparable<Object> {
 	
 	public void setEmail( String email ) { this.email = email; }
 
-	@SuppressWarnings("unlikely-arg-type")
 	public boolean equals( Object outro ) {
 		
-		if( !outro.getClass().equals( this ) ) return false;
+		if( outro instanceof Aluno ) return matric == ( ( Aluno )outro ).matric;
 		
-		return matric == ( ( Aluno )outro ).matric;
+		return false;
 	}
 	
 	@Override
