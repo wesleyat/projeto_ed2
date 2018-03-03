@@ -8,10 +8,14 @@ public class Aluno implements Comparable<Object> {
 
 	private long matric;
 	private short curso;
-	private String nome = new String( new char[40] ),
-				   endereco = new String( new char[50] ),
-				   telefone = new String( new char[10] ),
-				   email = new String( new char[45] );
+	private static final int MAX_NOME_LEN     = 40,
+			 				 MAX_ENDERECO_LEN = 50,
+			 				 MAX_TELEFONE_LEN = 10,
+			 				 MAX_EMAIL_LEN    = 45;
+	private String nome,
+				   endereco,
+				   telefone,
+				   email;
 				   
 	public Aluno() {}
 	
@@ -19,8 +23,16 @@ public class Aluno implements Comparable<Object> {
 		
 		this.matric = matricula;
 		this.curso = curso;
-		this.nome = nome;
-		this.endereco = endereco;
+		
+		if( nome.length() > MAX_NOME_LEN )
+			this.nome = nome.substring( 0, MAX_NOME_LEN -1 );
+		else
+			this.nome = nome + new String( new char[MAX_NOME_LEN - nome.length()] );
+		
+		if( endereco.length() > MAX_ENDERECO_LEN )
+			this.endereco = endereco.substring( 0, MAX_ENDERECO_LEN -1 );
+		else
+			this.endereco = endereco + new String( new char[MAX_ENDERECO_LEN - endereco.length()] );
 	}
 	
 	public long getMatricula() { return matric; }
@@ -37,13 +49,37 @@ public class Aluno implements Comparable<Object> {
 	
 	public void setCurso( short curso ) { this.curso = curso; }
 	
-	public void setNome( String nome ) { this.nome = nome; }
+	public void setNome( String nome ) {
+		
+		if( nome.length() > MAX_NOME_LEN )
+			this.nome = nome.substring( 0, MAX_NOME_LEN -1 );
+		else
+			this.nome = nome + new String( new char[MAX_NOME_LEN - nome.length()] ); 
+	}
 	
-	public void setEndereco( String endereco ) { this.endereco = endereco; }
+	public void setEndereco( String endereco ) { 
+		
+		if( endereco.length() > MAX_ENDERECO_LEN )
+			this.endereco = endereco.substring( 0, MAX_ENDERECO_LEN -1 );
+		else
+			this.endereco = endereco + new String( new char[MAX_ENDERECO_LEN - endereco.length()] ); 
+	}
 	
-	public void setTelefone( String telefone ) { this.telefone = telefone; }
+	public void setTelefone( String telefone ) {
+		
+		if( telefone.length() > MAX_TELEFONE_LEN )
+			this.telefone = telefone.substring( 0, MAX_TELEFONE_LEN -1 );
+		else
+			this.telefone = telefone + new String( new char[MAX_TELEFONE_LEN - telefone.length()] ); 
+	}
 	
-	public void setEmail( String email ) { this.email = email; }
+	public void setEmail( String email ) { 
+		
+		if( email.length() > MAX_EMAIL_LEN )
+			this.email = email.substring( 0, MAX_EMAIL_LEN -1 );
+		else
+			this.email = email + new String( new char[MAX_EMAIL_LEN - email.length()] );
+	}
 
 	public boolean equals( Object outro ) {
 		
