@@ -50,16 +50,17 @@ public class OrganizadorSequencial implements IFileOrganizer {
 				long mat;
 				boolean fim;
 				
+				// Posiciona a variável position no primeiro registro com matrícula maior que a matrícula a ser inserida, ou ao final do arquivo
 				do {
-					fim = channel.read( buf ) == -1;
+					fim = channel.read( buf ) == -1; // Encerra o loop ao final do arquivo
 					mat = buf.getLong();
 				}
 				while ( mat < p.getMatricula() | !fim );
 				
 				do {
-					channel.write( buf );
-					buf = buffer;
-					fim = channel.read( buffer ) == -1;
+					channel.write( buffer, ( channel.position() - 1 ) ); // É (position - 1) porque position é encrementado assim que o buffer é lido
+					buffer = buf;
+					fim = channel.read( buf ) == -1;
 				}
 				while( !fim );
 				
