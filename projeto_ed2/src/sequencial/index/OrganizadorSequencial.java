@@ -49,7 +49,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 				long mat;
 				boolean fim;
 				
-				// Lê o primeiro registro com matrícula maior que a matrícula a ser inserida (position no registro sucessor), ou ao final do arquivo
+				// Lê o primeiro registro com matrícula maior que a matrícula a ser inserida (position no registro sucessor), ou ao final do arquivo 
 				do {
 					fim = channel.read( buf ) == -1; // Encerra o loop ao final do arquivo
 					mat = buf.getLong();
