@@ -45,7 +45,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 			try {
 				rf = new RandomAccessFile( file, "rw" );
 				channel = rf.getChannel();
-				channel.position( 0 );
+				//channel.position( 0 );
 				ByteBuffer buf = ByteBuffer.allocate( 300 );
 				long mat;
 				boolean fim;
@@ -55,7 +55,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 					fim = channel.read( buf ) == -1; // Encerra o loop ao final do arquivo
 					mat = buf.getLong();
 				}
-				while ( mat < p.getMatricula() | !fim );
+				while ( mat < p.getMatricula() && !fim );
 				
 				do {
 					channel.write( buffer, ( channel.position() - 1 ) ); // É (position - 1) porque position é incrementado assim que o buffer é lido
