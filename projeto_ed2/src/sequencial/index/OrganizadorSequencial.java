@@ -118,7 +118,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 		return aluno;
 	}
 
-	private long getAlunoPosition( long matricula ) {
+	public long getAlunoPosition( long matricula ) {
 		
 		long pos = -1;
 		
@@ -142,7 +142,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 		return pos;
 	}
 	
-	private Aluno getAlunoByPosition( long position ) {
+	public Aluno getAlunoByPosition( long position ) {
 
 		try {
 			rf = new RandomAccessFile( file, "r" );
