@@ -58,7 +58,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 				while ( mat < p.getMatricula() | !fim );
 				
 				do {
-					channel.write( buffer, ( channel.position() - 1 ) ); // É (position - 1) porque position é encrementado assim que o buffer é lido
+					channel.write( buffer, ( channel.position() - 1 ) ); // É (position - 1) porque position é incrementado assim que o buffer é lido
 					buffer = buf;
 					fim = channel.read( buf ) == -1;
 				}
@@ -98,18 +98,17 @@ public class OrganizadorSequencial implements IFileOrganizer {
 				rf = new RandomAccessFile( file, "rw" );
 				channel = rf.getChannel();
 				
-				channel.position( position + 1 );
+				channel.position( position + 1 ); // Posiciona o channel na posição sucessora a do registro encontrado
 				
-				while( buffer.limit() > -1 ) {
+				while( channel.read( buffer ) > -1 ) { // Repete enquanto não chegar ao final do arquivo
 					
-					channel.read( buffer );
-					channel.position( position - 2 );
+					channel.position( position - 2 ); // Voltando para a posição do registro encontrado para sobrescrevê-lo
 					
 					channel.write( buffer );
-					channel.position( position + 2 );
-				}
+					channel.position( position + 1 ); // Quando escreve, position avança para o próximo registro, que é o mesmo que acabou 
+				}									  // de ser escrito. Então deve-se avançar mais um registro para ler um novo registro.
 				
-				channel.truncate( channel.position() - 1 );
+				channel.truncate( channel.position() - 1 ); // Remove o último registro, que é igual ao penúltimo.
 				channel.close();
 				rf.close();
 			}
