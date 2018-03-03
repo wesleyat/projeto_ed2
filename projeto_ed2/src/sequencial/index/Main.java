@@ -70,15 +70,12 @@ public class Main {
 				String nome = scan.nextLine();
 				nome = nome.substring( 0, nome.length() > MAX_NOME_LEN ? MAX_NOME_LEN : nome.length() );
 				System.out.print( "Endereço (até 50 caracteres): " );
-				//scan.nextLine();
 				String endereco = scan.nextLine();
 				endereco = endereco.substring( 0, endereco.length() > MAX_ENDERECO_LEN ? MAX_ENDERECO_LEN : endereco.length() );
-				System.out.print( "Telefone (até 10 caracteres): " );
-				//scan.nextLine();
+				System.out.print( "Telefone (até 10 caracteres): " );				//scan.nextLine();
 				String telefone = scan.nextLine();
 				telefone = telefone.substring( 0, telefone.length() > MAX_TELEFONE_LEN ? MAX_TELEFONE_LEN : telefone.length() );
 				System.out.print( "E-mail (até 45 caracteres): " );
-				//scan.nextLine();
 				String email = scan.nextLine();
 				email = email.substring( 0, email.length() > MAX_EMAIL_LEN ? MAX_EMAIL_LEN : email.length() );
 				
