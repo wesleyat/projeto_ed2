@@ -8,10 +8,10 @@ public class Aluno implements Comparable<Object> {
 
 	private long matric;
 	private short curso;
-	private static final int MAX_NOME_LEN     = 40,
-			 				 MAX_ENDERECO_LEN = 50,
-			 				 MAX_TELEFONE_LEN = 10,
-			 				 MAX_EMAIL_LEN    = 45;
+	private static final int MAX_NOME_LEN     = 80,
+			 				 MAX_ENDERECO_LEN = 100,
+			 				 MAX_TELEFONE_LEN = 20,
+			 				 MAX_EMAIL_LEN    = 90;
 	private String nome,
 				   endereco,
 				   telefone,
