@@ -8,10 +8,6 @@ import comum.Aluno;
 public class Main {
 
 	private static final String DB_FILE_NAME = "alunos.db";
-	private static final int MAX_NOME_LEN     = 39, // 40 - 1 caracteres
-							 MAX_ENDERECO_LEN = 49, // 50 - 1 caracteres
-							 MAX_TELEFONE_LEN = 9,  // 10 - 1 caracteres
-							 MAX_EMAIL_LEN    = 44; // 45 - 1 caracteres
 	private static OrganizadorSequencial org;
 	private static String dbPath,
 						  dbFullPath;
@@ -35,7 +31,7 @@ public class Main {
 			
 			switch( opcao ) {
 			case 1:
-				System.out.println(
+				System.out.print(
 						"\n================== CONSULTAR DADOS DO ALUNO ===================\n" +
 						"Informe a matrícula: "
 					);
@@ -58,7 +54,7 @@ public class Main {
 				
 				break;
 			case 2:
-				System.out.println(
+				System.out.print(
 						"\n===================== NOVO ALUNO =====================\n" +
 						"Matrícula: " 
 					);
@@ -68,16 +64,12 @@ public class Main {
 				System.out.print( "Nome (até 40 caracteres): " );
 				scan.nextLine();
 				String nome = scan.nextLine();
-				nome = nome.substring( 0, nome.length() > MAX_NOME_LEN ? MAX_NOME_LEN : nome.length() );
 				System.out.print( "Endereço (até 50 caracteres): " );
 				String endereco = scan.nextLine();
-				endereco = endereco.substring( 0, endereco.length() > MAX_ENDERECO_LEN ? MAX_ENDERECO_LEN : endereco.length() );
-				System.out.print( "Telefone (até 10 caracteres): " );				//scan.nextLine();
+				System.out.print( "Telefone (até 10 caracteres): " );
 				String telefone = scan.nextLine();
-				telefone = telefone.substring( 0, telefone.length() > MAX_TELEFONE_LEN ? MAX_TELEFONE_LEN : telefone.length() );
 				System.out.print( "E-mail (até 45 caracteres): " );
 				String email = scan.nextLine();
-				email = email.substring( 0, email.length() > MAX_EMAIL_LEN ? MAX_EMAIL_LEN : email.length() );
 				
 				aluno = new Aluno( matricula, curso, nome, endereco );
 				aluno.setEmail( email );
@@ -86,7 +78,7 @@ public class Main {
 				org.addAluno( aluno );
 				break;
 			case 3:
-				System.out.println(
+				System.out.print(
 						"\n===================== EXCLUIR ALUNO =====================\n" +
 						"Matrícula: "
 					);
@@ -96,7 +88,7 @@ public class Main {
 				if( aluno == null)
 					System.out.println( "Aluno não encontrado!" );
 				else
-					System.out.println( "Aluno " + aluno.getNome() + "removido com sucesso!" );
+					System.out.println( "Aluno " + aluno.getNome().trim() + " removido com sucesso!" );
 				break;
 			case 4:
 				System.out.print( "\nInforme o novo diretório: " );
@@ -111,8 +103,6 @@ public class Main {
 		scan.close();
 	}
 	
-	private static String getDBPath() { return dbPath;	}
-	
 	private static String getDBFullPath() { return dbFullPath; }
 	
 	private static void setDBPath( String newPath ) {
@@ -124,14 +114,15 @@ public class Main {
 	
 	private static void printMenu() {
 		
-		System.out.println(
+		System.out.print(
 				"======================= MENU ====================\n" +
 				"1 - CONSULTAR ALUNO\n" +
 				"2 - ADICIONAR ALUNO\n" +
 				"3 - EXCLUIR ALUNO\n" +
 				"4 - ALTERAR LOCAL DE ARMAZENAMENTO\n" +
 				"5 - CONFERIR LOCAL DA DATABASE\n" +
-				"6 - SAIR"
+				"6 - SAIR" +
+				"\n\nOPÇÃO: "
 			);
 	}
 }
