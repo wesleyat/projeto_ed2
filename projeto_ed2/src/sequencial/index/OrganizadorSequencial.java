@@ -197,19 +197,4 @@ public class OrganizadorSequencial implements IFileOrganizer {
 		
 		return pos -BUFF_SIZE; // Retorna a posição do início do registro
 	}
-	
-	/*
-	public void ManipuladorSequencial( String fileName, String mode ) {
-		
-		try {
-			File file = new File( fileName );
-			RandomAccessFile rf = new RandomAccessFile( file, mode );
-			channel = rf.getChannel();
-		}
-		catch( FileNotFoundException e ) {
-			
-			e.printStackTrace();
-		}
-	}
-	*/
 }
