@@ -1,7 +1,6 @@
 package brent.index;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -34,60 +33,121 @@ public class OrganizadorBrent implements IFileOrganizer {
 
 	@Override
 	public void addAluno( Aluno p ) {
-		// TODO Auto-generated method stub
 		
+		int position = getAlunoPosition( p.getMatricula() );
+		
+		if( position < 0 ) {
+			
+			try {
+				rf = new RandomAccessFile( file, "w" );
+				channel = rf.getChannel();
+				
+				buffer.position( 0 );
+				buffer.putLong( p.getMatricula() );
+				buffer.putShort( p.getCurso() );
+				buffer.put( p.getNome().getBytes() );
+				buffer.put( p.getEndereco().getBytes() );
+				buffer.put( p.getTelefone().getBytes() );
+				buffer.put( p.getEmail().getBytes() );
+				
+				channel.write( buffer, position );
+				channel.close();
+				rf.close();
+			}
+			catch( IOException e ) { e.printStackTrace(); }
+		}
 	}
 
 	@Override
-	public Aluno getAluno( long matric ) {
+	public Aluno getAluno( long matricula ) {
 		
-		Aluno aluno = null;
+		int position = getAlunoPosition( matricula );
 		
-		
+		if( position < 0 )
+			return null;
 		
 		byte[] nome = new byte[80];
 		byte[] endereco = new byte[100];
 		byte[] telefone = new byte[20];
 		byte[] email = new byte[90];
 		
-		long mat = buffer.getLong();
+		try {
+			rf = new RandomAccessFile( file, "r" );
+			channel = rf.getChannel();
+			
+			buffer.position( 0 );
+			channel.read( buffer, position );
+			channel.close();
+			rf.close();
+		}
+		catch( IOException e ) { e.printStackTrace(); }
+		
+		buffer.position( 8 ); // Pulando o campo da matrícula
 		short curso = buffer.getShort();
 		buffer.get( nome );
 		buffer.get( endereco );
 		buffer.get( telefone );
 		buffer.get( email );
 		
-		return null;
+		Aluno aluno = new Aluno( matricula, curso, new String( nome ), new String ( endereco ) );
+		aluno.setEmail( new String( email ) );
+		aluno.setTelefone( new String( telefone ) );
+		
+		return aluno;
 	}
 
 	@Override
-	public Aluno delAluno( long matric ) {
-		// TODO Auto-generated method stub
-		return null;
+	public Aluno delAluno( long matricula ) {
+		
+		Aluno aluno = getAluno( matricula );
+		
+		if( aluno != null ) {
+			
+			int position = getAlunoPosition( matricula );
+			
+			try {
+				rf = new RandomAccessFile( file, "w" );
+				channel = rf.getChannel();
+				
+				buffer = ByteBuffer.allocate( BUFF_SIZE );
+				buffer.putLong( -1 );
+				channel.write( buffer, position );
+				channel.close();
+				rf.close();
+			}
+			catch( IOException e ) { e.printStackTrace(); }
+		}
+		
+		return aluno;
 	}
 	
 	private int hash( long chave ) { return ( int )chave % NUM_OF_REC; }
 	
 	private int inc( long chave ) { return ( ( int )chave % ( NUM_OF_REC -2 ) ) +1; }
 	
-	private int getAlunoPosition( int matric ) {
+	private int getAlunoPosition( long matricula ) {
 		
-		int position = hash( matric );
+		int position = hash( matricula ); // position é do arquivo, não confundir com o do buffer
+		int proximo = position + inc( matricula );
 		
 		try {
 			rf = new RandomAccessFile( file, "r" );
 			channel = rf.getChannel();
 			buffer.position( 0 );
-			
-			if( channel.read( buffer, position ) > -1 ) {
+			channel.read( buffer, position );
 				
+			do {
 				long mat = buffer.getLong( 0 );
 				
-				if( matric == mat )
+				if( matricula == mat )
 					return position;
-				
-				// TODO : implementar a busca pelo menor esfor�o
+
+				proximo = proximo + inc( matricula );
 			}
+			while( channel.read( buffer, proximo ) > 0 ); // Se retornar um negativo, não existia dado
+														  // Se retornar zero, o dado era vazio
+			channel.close();
+			rf.close();
 		}
 		catch ( IOException e ) { e.printStackTrace();	}
 		
