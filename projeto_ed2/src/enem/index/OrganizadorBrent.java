@@ -37,11 +37,10 @@ public class OrganizadorBrent implements IFileOrganizer {
 		int position = getAlunoPosition( p.getMatricula() );
 		
 		if( position < 0 ) {
-			
 			try {
 				rf = new RandomAccessFile( file, "rw" );
 				channel = rf.getChannel();
-				position = hash( p.getMatricula() );
+				position = hash( p.getMatricula() ) * BUFF_SIZE;
 				
 				buffer.position( 0 );
 				buffer.putLong( p.getMatricula() );
@@ -84,7 +83,7 @@ public class OrganizadorBrent implements IFileOrganizer {
 		}
 		catch( IOException e ) { e.printStackTrace(); }
 		
-		buffer.position( 8 ); // Pulando o campo da matrÃ­cula
+		buffer.position( 8 ); // Pulando o campo da matrícula
 		short curso = buffer.getShort();
 		buffer.get( nome );
 		buffer.get( endereco );
@@ -129,8 +128,8 @@ public class OrganizadorBrent implements IFileOrganizer {
 	
 	private int getAlunoPosition( long matricula ) {
 		
-		int position = hash( matricula ); // position Ã© do arquivo, nÃ£o confundir com o do buffer
-		int proximo = position + inc( matricula );
+		int position = hash( matricula ) * BUFF_SIZE; // position é do arquivo, não confundir com o do buffer
+		int proximo = position + ( inc( matricula ) * BUFF_SIZE );
 		
 		try {
 			rf = new RandomAccessFile( file, "r" );
@@ -144,9 +143,10 @@ public class OrganizadorBrent implements IFileOrganizer {
 				if( matricula == mat )
 					return position;
 
-				proximo = proximo + inc( matricula );
+				position = proximo;
+				proximo += ( inc( matricula ) * BUFF_SIZE ); // A multiplicação por BUFF_SIZE é para evitar que um registro seja inserido no meio de outro
 			}
-			while( channel.read( buffer, proximo ) > 0 ); // Se retornar um negativo, nÃ£o existia dado
+			while( channel.read( buffer, position ) > 0 ); // Se retornar um negativo, não existia dado
 														  // Se retornar zero, o dado era vazio
 			channel.close();
 			rf.close();
