@@ -153,4 +153,12 @@ public class OrganizadorBrent implements IFileOrganizer {
 		
 		return -1;
 	}
+	
+	public boolean hasDatabase() { return file.exists(); }
+	
+	public void moveDatabase( String newPath ) {
+		
+		file.renameTo( new File( newPath ) );
+		file = new File( newPath );
+	}
 }
