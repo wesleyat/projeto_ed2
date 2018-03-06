@@ -7,7 +7,7 @@ import comum.Aluno;
 
 public class Main {
 
-	private static final String DB_FILE_NAME = "alunos.db";
+	private static final String DB_FILE_NAME = "enem_brent.db";
 	private static OrganizadorBrent org;
 	private static String dbPath,
 						  dbFullPath;
