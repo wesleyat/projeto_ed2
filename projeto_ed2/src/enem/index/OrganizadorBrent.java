@@ -39,8 +39,9 @@ public class OrganizadorBrent implements IFileOrganizer {
 		if( position < 0 ) {
 			
 			try {
-				rf = new RandomAccessFile( file, "w" );
+				rf = new RandomAccessFile( file, "rw" );
 				channel = rf.getChannel();
+				position = hash( p.getMatricula() );
 				
 				buffer.position( 0 );
 				buffer.putLong( p.getMatricula() );
@@ -106,7 +107,7 @@ public class OrganizadorBrent implements IFileOrganizer {
 			int position = getAlunoPosition( matricula );
 			
 			try {
-				rf = new RandomAccessFile( file, "w" );
+				rf = new RandomAccessFile( file, "rw" );
 				channel = rf.getChannel();
 				
 				buffer = ByteBuffer.allocate( BUFF_SIZE );
