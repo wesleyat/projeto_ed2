@@ -37,6 +37,7 @@ public class OrganizadorBrent implements IFileOrganizer {
 		int position = getAlunoPosition( p.getMatricula() );
 		
 		if( position < 0 ) {
+			
 			try {
 				rf = new RandomAccessFile( file, "rw" );
 				channel = rf.getChannel();
@@ -128,8 +129,8 @@ public class OrganizadorBrent implements IFileOrganizer {
 	
 	private int getAlunoPosition( long matricula ) {
 		
-		int position = hash( matricula ) * BUFF_SIZE; // position é do arquivo, não confundir com o do buffer
-		int proximo = position + ( inc( matricula ) * BUFF_SIZE );
+		int position = hash( matricula ) * BUFF_SIZE, // position é do arquivo, não confundir com o do buffer
+			incremento = inc( matricula ) * BUFF_SIZE; // A multiplicação por BUFF_SIZE é para evitar que um registro seja inserido no meio de outro
 		
 		try {
 			rf = new RandomAccessFile( file, "r" );
@@ -142,9 +143,8 @@ public class OrganizadorBrent implements IFileOrganizer {
 				
 				if( matricula == mat )
 					return position;
-
-				position = proximo;
-				proximo += ( inc( matricula ) * BUFF_SIZE ); // A multiplicação por BUFF_SIZE é para evitar que um registro seja inserido no meio de outro
+				
+				position += incremento; 
 			}
 			while( channel.read( buffer, position ) > 0 ); // Se retornar um negativo, não existia dado
 														  // Se retornar zero, o dado era vazio
@@ -154,6 +154,27 @@ public class OrganizadorBrent implements IFileOrganizer {
 		catch ( IOException e ) { e.printStackTrace();	}
 		
 		return -1;
+	}
+	
+	private int calculaCusto( long matricula, int position ) {
+		
+		int qtdBytes = -1,
+			inc = inc( matricula ) * BUFF_SIZE;
+		
+		try {
+			rf = new RandomAccessFile( file, "r" );
+			channel = rf.getChannel();
+			buffer.position( 0 );
+			qtdBytes = channel.read( buffer, position );
+			channel.close();
+			rf.close();
+		} 
+		catch ( IOException e ) { e.printStackTrace(); }
+		
+		if( qtdBytes < 0 || buffer.getLong( 0 ) < 0 )
+			return 2;
+		
+		return 1 + calculaCusto( matricula, position + inc );
 	}
 	
 	public boolean hasDatabase() { return file.exists(); }
