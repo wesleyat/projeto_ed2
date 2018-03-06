@@ -50,6 +50,7 @@ public class OrganizadorBrent implements IFileOrganizer {
 				buffer.put( p.getEndereco().getBytes() );
 				buffer.put( p.getTelefone().getBytes() );
 				buffer.put( p.getEmail().getBytes() );
+				buffer.position( 0 );
 				
 				channel.write( buffer, position );
 				channel.close();
