@@ -107,7 +107,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 					if( channel.read( buffer, position +BUFF_SIZE ) < 0 ) // Lê o próximo registro, apartir do seu primeiro byte, sem alterar channel.position
 						break;
 					
-					buffer.position( 0 );
+					buffer.position( 0 ); // Não usei buffer.flip() porque ele pode mudar o tamanho do registro conforme encontre espaços em branco nos cmapos
 					
 					channel.write( buffer ); // Sobrescreve o conteúdo de channel.position, avançando para o primeiro byte do próximo registro
 					position = channel.position();
@@ -126,26 +126,27 @@ public class OrganizadorSequencial implements IFileOrganizer {
 
 	public long getAlunoPosition( long matricula ) {
 		
+		long pos = -1;
+		
 		try {
 			rf = new RandomAccessFile( file, "r" );
 			channel = rf.getChannel();
-			long pos;
 		
 			do {
-				pos = drainChannel();
+				pos = drainChannel() -BUFF_SIZE; // É a posição do primeiro byte do registro
 				long mat = buffer.getLong();
 				
 				if( matricula == mat )
-					return pos;
+					break;
 			}
-			while( pos < file.length() -BUFF_SIZE );
+			while( pos <= file.length() );
 			
 			channel.close();
 			rf.close();
 		}
 		catch( IOException e ) { e.printStackTrace(); }
 		
-		return -1;
+		return pos;
 	}
 	
 	public Aluno getAlunoByPosition( long position ) {
@@ -154,7 +155,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 			rf = new RandomAccessFile( file, "r" );
 			channel = rf.getChannel();
 			
-			channel.position( position );
+			channel.position( position * BUFF_SIZE ); // Permite usar valores unitários para position, mas deslocar-se pelo arquivo de registro em registro
 			drainChannel();
 			channel.close();
 			rf.close();
@@ -195,6 +196,6 @@ public class OrganizadorSequencial implements IFileOrganizer {
 		long pos = channel.position();
 		buffer.position( 0 );
 		
-		return pos -BUFF_SIZE; // Retorna a posição do início do registro
+		return pos; // Retorna a posição do início do próximo registro
 	}
 }
