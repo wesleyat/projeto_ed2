@@ -36,13 +36,34 @@ public class OrganizadorBrent implements IFileOrganizer {
 		
 		int position = getAlunoPosition( p.getMatricula() );
 		
-		if( position < 0 ) {
+		if( position < 0 ) { // Verifica se o registro já não existe
 			
 			try {
 				rf = new RandomAccessFile( file, "rw" );
 				channel = rf.getChannel();
 				position = hash( p.getMatricula() ) * BUFF_SIZE;
+				buffer.position( 0 );
+				int qtdBytes = channel.read( buffer, position );
 				
+				if( qtdBytes > -1 ) { // Verifica se existe registro na posição lida
+					
+					long matBuffer = buffer.getLong( 0 );
+
+					if( matBuffer > 0 ) { // Verifica se a posição lida não é de registro excluído
+						
+						int custoP			= calculaCustoAcesso( p.getMatricula(), position ),
+							custoMatBuffer	= calculaCustoAcesso( matBuffer, position );
+						
+						if( custoP > custoMatBuffer ) {
+							
+							buffer.position( 0 );
+							channel.write( buffer, position + ( ( custoMatBuffer - 1) * BUFF_SIZE ) );
+						}
+						else
+							position += ( custoP - 1 ) * BUFF_SIZE;
+					}
+				}
+								
 				buffer.position( 0 );
 				buffer.putLong( p.getMatricula() );
 				buffer.putShort( p.getCurso() );
@@ -156,7 +177,7 @@ public class OrganizadorBrent implements IFileOrganizer {
 		return -1;
 	}
 	
-	private int calculaCusto( long matricula, int position ) {
+	private int calculaCustoAcesso( long matricula, int position ) {
 		
 		int qtdBytes = -1,
 			inc = inc( matricula ) * BUFF_SIZE;
@@ -174,7 +195,7 @@ public class OrganizadorBrent implements IFileOrganizer {
 		if( qtdBytes < 0 || buffer.getLong( 0 ) < 0 )
 			return 2;
 		
-		return 1 + calculaCusto( matricula, position + inc );
+		return 1 + calculaCustoAcesso( matricula, position + inc );
 	}
 	
 	public boolean hasDatabase() { return file.exists(); }
