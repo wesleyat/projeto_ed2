@@ -60,14 +60,6 @@ public class Aluno implements Comparable<Object>, TamanhoAluno {
 	public void setTelefone( String telefone ) { this.telefone = telefone.trim(); }
 	
 	public void setEmail( String email ) { this.email = email.trim(); }
-
-	public boolean equals( Object outro ) {
-		
-		if( outro instanceof Aluno )
-			return matric == ( ( Aluno )outro ).matric;
-		
-		return false;
-	}
 	
 	@Override
 	public int compareTo( Object outro ) throws IllegalArgumentException {
@@ -81,6 +73,16 @@ public class Aluno implements Comparable<Object>, TamanhoAluno {
 		
 		return 0;
 	}
+	
+	public boolean equals( Object outro ) {
+		
+		if( outro instanceof Aluno )
+			return matric == ( ( Aluno )outro ).matric;
+		
+		return false;
+	}
+	
+	public int size() { return LENGTH_ALUNO; }
 	
 	public ByteBuffer toByteByffer() { return ConversorAluno.toByteBuffer( this ); }
 	
