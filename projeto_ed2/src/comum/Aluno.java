@@ -17,8 +17,8 @@ public class Aluno implements Comparable<Object> {
 	public Aluno( long matricula, String nome, String endereco, short curso ) {
 		
 		matric = matricula;
-		this.nome = nome;
-		this.endereco = endereco;
+		this.nome = nome.trim();
+		this.endereco = endereco.trim();
 		this.curso = curso;
 	}
 	
@@ -36,13 +36,13 @@ public class Aluno implements Comparable<Object> {
 	
 	public void setCurso( short curso ) { this.curso = curso; }
 	
-	public void setNome( String nome ) { this.nome = nome; }
+	public void setNome( String nome ) { this.nome = nome.trim(); }
 	
-	public void setEndereco( String endereco ) { this.endereco = endereco; }
+	public void setEndereco( String endereco ) { this.endereco = endereco.trim(); }
 	
-	public void setTelefone( String telefone ) { this.telefone = telefone; }
+	public void setTelefone( String telefone ) { this.telefone = telefone.trim(); }
 	
-	public void setEmail( String email ) { this.email = email; }
+	public void setEmail( String email ) { this.email = email.trim(); }
 
 	public boolean equals( Object outro ) {
 		
