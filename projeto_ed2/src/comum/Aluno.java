@@ -19,7 +19,7 @@ public class Aluno implements Comparable<Object> {
 				   
 	public Aluno() {}
 	
-	public Aluno( long matricula, short curso, String nome, String endereco ) {
+	public Aluno( long matricula, String nome, String endereco, short curso ) {
 		
 		this.matric = matricula;
 		this.curso = curso;
