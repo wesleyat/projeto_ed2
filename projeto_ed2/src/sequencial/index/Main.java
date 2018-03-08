@@ -71,7 +71,7 @@ public class Main {
 				System.out.print( "E-mail (até 45 caracteres): " );
 				String email = scan.nextLine();
 				
-				aluno = new Aluno( matricula, curso, nome, endereco );
+				aluno = new Aluno( matricula, nome, endereco, curso );
 				aluno.setEmail( email );
 				aluno.setTelefone( telefone );
 				
