@@ -78,4 +78,12 @@ public class Aluno implements Comparable<Object> {
 		
 		return 0;
 	}
+	
+	public ByteBuffer toByteByffer() { return ConversorAluno.toByteBuffer( this ); }
+	
+	public String toString() {
+		
+		return "Matrícula: " + matric + "; Nome: " + nome + "; Endereço: " + endereco + "\n" +
+			   "Curso: " + curso + "; Telefone: " + telefone + "; E-mail: " + email;
+	}
 }
