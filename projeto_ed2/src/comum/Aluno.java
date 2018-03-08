@@ -1,5 +1,7 @@
 package comum;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author Wesley Alves Torres
  *
@@ -20,6 +22,18 @@ public class Aluno implements Comparable<Object> {
 		this.nome = nome.trim();
 		this.endereco = endereco.trim();
 		this.curso = curso;
+	}
+	
+	public Aluno( ByteBuffer buf ) {
+		
+		Aluno a = ConversorAluno.toAluno( buf );
+		
+		matric = a.matric;
+		nome = a.nome;
+		endereco = a.endereco;
+		telefone = a.telefone;
+		curso = a.curso;
+		email = a.email;
 	}
 	
 	public long getMatricula() { return matric; }
