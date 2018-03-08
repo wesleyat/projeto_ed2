@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
  * @author Wesley Alves Torres
  *
  */
-public class Aluno implements Comparable<Object> {
+public class Aluno implements Comparable<Object>, TamanhoAluno {
 
 	private long matric;
 	private short curso;
@@ -24,7 +24,10 @@ public class Aluno implements Comparable<Object> {
 		this.curso = curso;
 	}
 	
-	public Aluno( ByteBuffer buf ) {
+	public Aluno( ByteBuffer buf ) throws IllegalArgumentException {
+		
+		if( buf.capacity() < LENGTH_ALUNO )
+			throw new IllegalArgumentException( "O buffer deve ter capacidade mínima de " + LENGTH_ALUNO + " bytes." );
 		
 		Aluno a = ConversorAluno.toAluno( buf );
 		
