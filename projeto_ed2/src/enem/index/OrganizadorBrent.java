@@ -112,7 +112,7 @@ public class OrganizadorBrent implements IFileOrganizer {
 		buffer.get( telefone );
 		buffer.get( email );
 		
-		Aluno aluno = new Aluno( matricula, curso, new String( nome ), new String ( endereco ) );
+		Aluno aluno = new Aluno( matricula, new String( nome ), new String ( endereco ), curso );
 		aluno.setEmail( new String( email ) );
 		aluno.setTelefone( new String( telefone ) );
 		
