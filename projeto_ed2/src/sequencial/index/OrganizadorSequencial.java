@@ -14,8 +14,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 	File file;
 	FileChannel channel;
 	RandomAccessFile rf;
-	static int BUFF_SIZE = 300;
-	ByteBuffer buffer = ByteBuffer.allocate( BUFF_SIZE );
+	ByteBuffer buffer;
 	
 	
 	public OrganizadorSequencial( String fileName ) {
@@ -34,15 +33,8 @@ public class OrganizadorSequencial implements IFileOrganizer {
 		long position = getAlunoPosition( p.getMatricula() ); // Esta variável está sempre associada à posição no channel
 		
 		if( position < 0 ) {
-			
-			buffer.position( 0 );
-			buffer.putLong( p.getMatricula() );
-			buffer.putShort( p.getCurso() );
-			buffer.put( p.getNome().getBytes() );
-			buffer.put( p.getEndereco().getBytes() );
-			buffer.put( p.getTelefone().getBytes() );
-			buffer.put( p.getEmail().getBytes() );
-			buffer.position( 0 );
+
+			buffer = p.toByteByffer();
 			
 			try {
 				rf = new RandomAccessFile( file, "rw" );
@@ -51,14 +43,14 @@ public class OrganizadorSequencial implements IFileOrganizer {
 				long matricula = p.getMatricula();
 				
 				do {
-					ByteBuffer buf = ByteBuffer.allocate( 300 );
+					ByteBuffer buf = ByteBuffer.allocate( p.size() );
 					channel.read( buf );
 					position = channel.position();
 					long mat = buf.getLong( 0 ); // Explicitando a posição do início da leitura porque, neste momento, position está no final do buffer
 					
 					if( mat > matricula ) {
 						
-						channel.write( buffer, position -BUFF_SIZE ); // Escreve na posição do primeiro byte do registro
+						channel.write( buffer, position -buffer.capacity() ); // Escreve na posição do primeiro byte do registro
 						matricula = buf.getLong( 0 ); // Atualiza a variável matricula para a próxima comparação
 						buf.position( 0 );
 						buffer = buf;
@@ -102,9 +94,9 @@ public class OrganizadorSequencial implements IFileOrganizer {
 				channel.position( position );
 				
 				do {
-					buffer = ByteBuffer.allocate( BUFF_SIZE );
+					buffer = ByteBuffer.allocate( aluno.size() );
 					
-					if( channel.read( buffer, position +BUFF_SIZE ) < 0 ) // Lê o próximo registro, apartir do seu primeiro byte, sem alterar channel.position
+					if( channel.read( buffer, position +buffer.capacity() ) < 0 ) // Lê o próximo registro, apartir do seu primeiro byte, sem alterar channel.position
 						break;
 					
 					buffer.position( 0 ); // Não usei buffer.flip() porque ele pode mudar o tamanho do registro conforme encontre espaços em branco nos cmapos
@@ -133,13 +125,13 @@ public class OrganizadorSequencial implements IFileOrganizer {
 			channel = rf.getChannel();
 		
 			do {
-				pos = drainChannel() -BUFF_SIZE; // É a posição do primeiro byte do registro
+				pos = drainChannel() -buffer.capacity(); // É a posição do primeiro byte do registro
 				long mat = buffer.getLong();
 				
 				if( matricula == mat )
 					break;
 			}
-			while( pos <= file.length() );
+			while( pos < file.length() );
 			
 			channel.close();
 			rf.close();
@@ -151,32 +143,20 @@ public class OrganizadorSequencial implements IFileOrganizer {
 	
 	public Aluno getAlunoByPosition( long position ) {
 
+		Aluno aluno = null;
+		
 		try {
 			rf = new RandomAccessFile( file, "r" );
 			channel = rf.getChannel();
 			
-			channel.position( position * BUFF_SIZE ); // Permite usar valores unitários para position, mas deslocar-se pelo arquivo de registro em registro
+			channel.position( position * buffer.capacity() ); // Permite usar valores unitários para position, mas deslocar-se pelo arquivo de registro em registro
 			drainChannel();
 			channel.close();
 			rf.close();
 		}
 		catch( IOException e ) { e.printStackTrace(); }
 		
-		byte[] nome = new byte[80];
-		byte[] endereco = new byte[100];
-		byte[] telefone = new byte[20];
-		byte[] email = new byte[90];
-		
-		long matricula = buffer.getLong();
-		short curso = buffer.getShort();
-		buffer.get( nome );
-		buffer.get( endereco );
-		buffer.get( telefone );
-		buffer.get( email );
-		
-		Aluno aluno = new Aluno( matricula, new String( nome ), new String( endereco ), curso );
-		aluno.setEmail( new String( email ) );
-		aluno.setTelefone( new String( telefone ) );
+		aluno = new Aluno( buffer );
 		
 		return aluno;
 	}
