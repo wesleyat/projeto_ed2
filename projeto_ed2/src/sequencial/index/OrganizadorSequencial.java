@@ -14,7 +14,6 @@ public class OrganizadorSequencial implements IFileOrganizer {
 	File file;
 	FileChannel channel;
 	RandomAccessFile rf;
-	ByteBuffer buffer;
 	
 	
 	public OrganizadorSequencial( String fileName ) {
@@ -34,7 +33,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 		
 		if( position < 0 ) {
 
-			buffer = p.toByteByffer();
+			ByteBuffer buffer = p.toByteBuffer();
 			
 			try {
 				rf = new RandomAccessFile( file, "rw" );
@@ -43,7 +42,7 @@ public class OrganizadorSequencial implements IFileOrganizer {
 				long matricula = p.getMatricula();
 				
 				do {
-					ByteBuffer buf = ByteBuffer.allocate( p.size() );
+					ByteBuffer buf = ByteBuffer.allocate( Aluno.LENGTH );
 					channel.read( buf );
 					position = channel.position();
 					long mat = buf.getLong( 0 ); // Explicitando a posição do início da leitura porque, neste momento, position está no final do buffer
@@ -51,8 +50,8 @@ public class OrganizadorSequencial implements IFileOrganizer {
 					if( mat > matricula ) {
 						
 						channel.write( buffer, position -buffer.capacity() ); // Escreve na posição do primeiro byte do registro
-						matricula = buf.getLong( 0 ); // Atualiza a variável matricula para a próxima comparação
-						buf.position( 0 );
+						matricula = mat; // Atualiza a variável matricula para a próxima comparação
+						buf.flip();
 						buffer = buf;
 					}
 				}
@@ -91,20 +90,16 @@ public class OrganizadorSequencial implements IFileOrganizer {
 			try {
 				rf = new RandomAccessFile( file, "rw" );
 				channel = rf.getChannel();
-				channel.position( position );
+				channel.position( position * Aluno.LENGTH );
+				ByteBuffer buffer = ByteBuffer.allocate( Aluno.LENGTH );
 				
-				do {
-					buffer = ByteBuffer.allocate( aluno.size() );
-					
-					if( channel.read( buffer, position +buffer.capacity() ) < 0 ) // Lê o próximo registro, apartir do seu primeiro byte, sem alterar channel.position
-						break;
-					
-					buffer.position( 0 ); // Não usei buffer.flip() porque ele pode mudar o tamanho do registro conforme encontre espaços em branco nos cmapos
-					
+				while( channel.read( buffer, position +buffer.capacity() ) > -1 ) { // Lê o próximo registro, apartir do seu primeiro byte, sem alterar channel.position
+				
+					buffer.flip();
 					channel.write( buffer ); // Sobrescreve o conteúdo de channel.position, avançando para o primeiro byte do próximo registro
+					buffer.flip();
 					position = channel.position();
 				}
-				while ( position < file.length() ); // Encerra o loop ao final do arquivo
 				
 				channel.truncate( position ); // Remove o último registro, que é igual ao penúltimo.
 				channel.close();
@@ -123,15 +118,23 @@ public class OrganizadorSequencial implements IFileOrganizer {
 		try {
 			rf = new RandomAccessFile( file, "r" );
 			channel = rf.getChannel();
+			long mat;
 		
 			do {
-				pos = drainChannel() -buffer.capacity(); // É a posição do primeiro byte do registro
-				long mat = buffer.getLong();
+				ByteBuffer buffer = ByteBuffer.allocate( Aluno.LENGTH );
+				channel.read( buffer );
+				mat = buffer.getLong( 0 );
 				
-				if( matricula == mat )
+				//if( mat > matricula ) // // Otimizando: como o arquivo é ordenado em ordem crescente, se mat > matricula não precisa mais procurar
+				//	break;
+				
+				if( matricula == mat ) {
+				
+					pos = ( channel.position() -( long )buffer.capacity() ) / ( long )buffer.capacity();
 					break;
+				}
 			}
-			while( pos < file.length() );
+			while( mat > 0 );
 			
 			channel.close();
 			rf.close();
@@ -144,13 +147,14 @@ public class OrganizadorSequencial implements IFileOrganizer {
 	public Aluno getAlunoByPosition( long position ) {
 
 		Aluno aluno = null;
+		ByteBuffer buffer = ByteBuffer.allocate( Aluno.LENGTH );
 		
 		try {
 			rf = new RandomAccessFile( file, "r" );
 			channel = rf.getChannel();
 			
 			channel.position( position * buffer.capacity() ); // Permite usar valores unitários para position, mas deslocar-se pelo arquivo de registro em registro
-			drainChannel();
+			channel.read( buffer );
 			channel.close();
 			rf.close();
 		}
@@ -167,15 +171,5 @@ public class OrganizadorSequencial implements IFileOrganizer {
 		
 		file.renameTo( new File( newPath ) );
 		file = new File( newPath );
-	}
-	
-	private long drainChannel() throws IOException {
-		
-		buffer.position( 0 );
-		channel.read( buffer );
-		long pos = channel.position();
-		buffer.position( 0 );
-		
-		return pos; // Retorna a posição do início do próximo registro
 	}
 }

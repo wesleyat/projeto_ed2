@@ -11,18 +11,16 @@ import comum.IFileOrganizer;
 
 public class OrganizadorBrent implements IFileOrganizer {
 	
-	private static int BUFF_SIZE = 300;
 	private static int NUM_OF_REC = 10000019;
 	
 	private File file;
 	private FileChannel channel;
 	private RandomAccessFile rf;
-	private ByteBuffer buffer = ByteBuffer.allocate( BUFF_SIZE );
+	private ByteBuffer buffer;
 	
 	public OrganizadorBrent( String fileName ) {
 		
 		file = new File( fileName );
-		buffer = ByteBuffer.allocate( BUFF_SIZE );
 		
 		try {
 			if( !file.exists() )
@@ -34,15 +32,15 @@ public class OrganizadorBrent implements IFileOrganizer {
 	@Override
 	public void addAluno( Aluno p ) {
 		
-		int position = getAlunoPosition( p.getMatricula() );
+		long position = getAlunoPosition( p.getMatricula() );
 		
 		if( position < 0 ) { // Verifica se o registro já não existe
 			
 			try {
 				rf = new RandomAccessFile( file, "rw" );
 				channel = rf.getChannel();
-				position = hash( p.getMatricula() );
-				buffer.position( 0 );
+				buffer = ByteBuffer.allocate( Aluno.LENGTH );
+				position = hash( p.getMatricula() ) * ( long )buffer.capacity();
 				int qtdBytes = channel.read( buffer, position );
 				
 				if( qtdBytes > -1 ) { // Verifica se existe registro na posição lida
@@ -51,27 +49,20 @@ public class OrganizadorBrent implements IFileOrganizer {
 
 					if( matBuffer > 0 ) { // Verifica se a posição lida não é de registro excluído
 						
-						int custoP			= calculaCustoAcesso( p.getMatricula(), position ),
+						long custoP			= calculaCustoAcesso( p.getMatricula(), position ),
 							custoMatBuffer	= calculaCustoAcesso( matBuffer, position );
 						
 						if( custoP > custoMatBuffer ) {
 							
 							buffer.position( 0 );
-							channel.write( buffer, position + ( custoMatBuffer - 1) );
+							channel.write( buffer, position + ( ( custoMatBuffer -1L ) * ( long )buffer.capacity() ) );
 						}
 						else
-							position += ( custoP - 1 );
+							position += ( custoP - 1L ) * ( long )buffer.capacity();
 					}
 				}
 								
-				buffer.position( 0 );
-				buffer.putLong( p.getMatricula() );
-				buffer.putShort( p.getCurso() );
-				buffer.put( p.getNome().getBytes() );
-				buffer.put( p.getEndereco().getBytes() );
-				buffer.put( p.getTelefone().getBytes() );
-				buffer.put( p.getEmail().getBytes() );
-				buffer.position( 0 );
+				buffer = p.toByteBuffer();
 				
 				channel.write( buffer, position );
 				channel.close();
@@ -84,37 +75,23 @@ public class OrganizadorBrent implements IFileOrganizer {
 	@Override
 	public Aluno getAluno( long matricula ) {
 		
-		int position = getAlunoPosition( matricula );
+		long position = getAlunoPosition( matricula );
 		
 		if( position < 0 )
 			return null;
-		
-		byte[] nome = new byte[80];
-		byte[] endereco = new byte[100];
-		byte[] telefone = new byte[20];
-		byte[] email = new byte[90];
 		
 		try {
 			rf = new RandomAccessFile( file, "r" );
 			channel = rf.getChannel();
 			
-			buffer.position( 0 );
+			buffer = ByteBuffer.allocate( Aluno.LENGTH );
 			channel.read( buffer, position );
 			channel.close();
 			rf.close();
 		}
 		catch( IOException e ) { e.printStackTrace(); }
 		
-		buffer.position( 8 ); // Pulando o campo da matrícula
-		short curso = buffer.getShort();
-		buffer.get( nome );
-		buffer.get( endereco );
-		buffer.get( telefone );
-		buffer.get( email );
-		
-		Aluno aluno = new Aluno( matricula, new String( nome ), new String ( endereco ), curso );
-		aluno.setEmail( new String( email ) );
-		aluno.setTelefone( new String( telefone ) );
+		Aluno aluno = new Aluno( buffer );
 		
 		return aluno;
 	}
@@ -126,14 +103,15 @@ public class OrganizadorBrent implements IFileOrganizer {
 		
 		if( aluno != null ) {
 			
-			int position = getAlunoPosition( matricula );
+			long position = getAlunoPosition( matricula );
 			
 			try {
 				rf = new RandomAccessFile( file, "rw" );
-				channel = rf.getChannel();
+				channel = rf.getChannel();	
+				buffer = ByteBuffer.allocate( Aluno.LENGTH );
 				
-				buffer = ByteBuffer.allocate( BUFF_SIZE );
 				buffer.putLong( -1 );
+				buffer.position( 0 );
 				channel.write( buffer, position );
 				channel.close();
 				rf.close();
@@ -144,33 +122,41 @@ public class OrganizadorBrent implements IFileOrganizer {
 		return aluno;
 	}
 	
-	private int hash( long chave ) { return ( int )chave % NUM_OF_REC; }
+	private long hash( long chave ) { return chave % ( long )NUM_OF_REC; }
 	
-	private int inc( long chave ) { return ( ( int )chave % ( NUM_OF_REC -2 ) ) +1; }
+	private long inc( long chave ) { return ( chave % ( ( long )NUM_OF_REC -2L ) ) +1L; }
 	
-	private int getAlunoPosition( long matricula ) {
+	private long getAlunoPosition( long matricula ) {
 		
-		int position = hash( matricula ), // position é do arquivo, não confundir com o do buffer
-			incremento = inc( matricula ); // A multiplicação por BUFF_SIZE é para evitar que um registro seja inserido no meio de outro
+		long position = hash( matricula ) * ( long )Aluno.LENGTH, // position é do arquivo, não confundir com o do buffer
+			 incremento = inc( matricula ) * ( long )Aluno.LENGTH; // A multiplicação por LENGTH é para evitar que um registro seja inserido no meio de outro
 		
 		try {
 			rf = new RandomAccessFile( file, "r" );
 			channel = rf.getChannel();
-			buffer.position( 0 );
-			channel.read( buffer, position );
+			buffer = ByteBuffer.allocate( Aluno.LENGTH );
 				
-			do {
-				long mat;							// Não tenho como garantir que o meu hash não vai parar no meio de um registro existente,
-				try { mat = buffer.getLong( 0 ); }  // então, se não conseguir ler um long, apenas parto para a próxima posição.
-				catch( NullPointerException e ) { continue; }
+			while( channel.read( buffer, position ) > -1 ) { // Se retornar -1, não existe dado na posição
+				
+				long mat = buffer.getLong( 0 );
+				
+				if( mat < 1 ) // Se mat == 0, então o registro é vazio, Se mat == -1, o registro foi excluído 
+					break;
 				
 				if( matricula == mat )
 					return position;
 				
-				position += incremento; 
+				position += incremento;
+				
+				if( position > ( long )NUM_OF_REC * ( long )Aluno.LENGTH ) {
+					
+					long diff = position -( ( long )NUM_OF_REC * ( long )Aluno.LENGTH );
+					position = 0L + diff;
+				}
+				
+				buffer.position( 0 );
 			}
-			while( channel.read( buffer, position ) > 0 ); // Se retornar um negativo, não existia dado
-														   // Se retornar zero, o dado era vazio
+			
 			channel.close();
 			rf.close();
 		}
@@ -179,25 +165,26 @@ public class OrganizadorBrent implements IFileOrganizer {
 		return -1;
 	}
 	
-	private int calculaCustoAcesso( long matricula, int position ) {
+	private long calculaCustoAcesso( long matricula, long position ) {
 		
-		int qtdBytes = -1,
-			inc = inc( matricula );
+		long qtdBytes = -1,
+			 inc = inc( matricula ) * ( long )Aluno.LENGTH;
 		
 		try {
-			rf = new RandomAccessFile( file, "r" );
-			channel = rf.getChannel();
-			buffer.position( 0 );
+			RandomAccessFile rf = new RandomAccessFile( file, "r" );
+			FileChannel channel = rf.getChannel();
+			buffer = ByteBuffer.allocate( Aluno.LENGTH );
 			qtdBytes = channel.read( buffer, position );
+			
 			channel.close();
 			rf.close();
 		} 
 		catch ( IOException e ) { e.printStackTrace(); }
 		
-		if( qtdBytes < 0 || buffer.getLong( 0 ) < 0 ) // Verifica se existia algum registro não vazio naquela posição
-			return 2;
+		if( qtdBytes < 0 || buffer.getLong( 0 ) < 1 ) // Verifica se existia algum registro não vazio naquela posição
+			return 2; // Retorna 2 porque, se precisou calcular o custo, o registro já não vai ser inserido na primeira posição checada
 		
-		return 1 + calculaCustoAcesso( matricula, position + inc );
+		return 1L + calculaCustoAcesso( matricula, position + inc );
 	}
 	
 	public boolean hasDatabase() { return file.exists(); }
