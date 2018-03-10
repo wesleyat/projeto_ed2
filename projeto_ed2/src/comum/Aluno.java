@@ -26,8 +26,8 @@ public class Aluno implements Comparable<Object>, TamanhoAluno {
 	
 	public Aluno( ByteBuffer buf ) throws IllegalArgumentException {
 		
-		if( buf.capacity() < LENGTH_ALUNO )
-			throw new IllegalArgumentException( "O buffer deve ter capacidade mínima de " + LENGTH_ALUNO + " bytes." );
+		if( buf.capacity() < LENGTH )
+			throw new IllegalArgumentException( "O buffer deve ter capacidade mínima de " + LENGTH + " bytes." );
 		
 		Aluno a = ConversorAluno.toAluno( buf );
 		
@@ -82,9 +82,7 @@ public class Aluno implements Comparable<Object>, TamanhoAluno {
 		return false;
 	}
 	
-	public int size() { return LENGTH_ALUNO; }
-	
-	public ByteBuffer toByteByffer() { return ConversorAluno.toByteBuffer( this ); }
+	public ByteBuffer toByteBuffer() { return ConversorAluno.toByteBuffer( this ); }
 	
 	public String toString() {
 		
