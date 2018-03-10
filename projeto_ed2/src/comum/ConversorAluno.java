@@ -21,13 +21,22 @@ class ConversorAluno {
         ByteBuffer buf = ByteBuffer.allocate( TamanhoAluno.LENGTH );
 
         buf.putLong( a.getMatricula() );
+        
         buf.put( a.getNome().getBytes() );
+        buf.position( TamanhoAluno.LENGTH_MATRIC + TamanhoAluno.LENGTH_NOME );
+        
         buf.put( a.getEndereco().getBytes() );
+        buf.position( TamanhoAluno.LENGTH_MATRIC + TamanhoAluno.LENGTH_NOME + TamanhoAluno.LENGTH_ENDER );
+        
         buf.put( a.getTelefone().getBytes() );
+        buf.position( TamanhoAluno.LENGTH_MATRIC + TamanhoAluno.LENGTH_NOME + TamanhoAluno.LENGTH_ENDER + TamanhoAluno.LENGTH_FONE );
+        
         buf.putShort( a.getCurso() );
+        
         buf.put( a.getEmail().getBytes() );
         
-        buf.position( 0 ); // Prepara o buffer para leitura posterior
+        buf.position( TamanhoAluno.LENGTH );
+        buf.flip();
 
         return buf;
 
@@ -35,6 +44,7 @@ class ConversorAluno {
 
     static Aluno toAluno( ByteBuffer buf ) {
 
+    	buf.position( 0 );
         long matricula = buf.getLong();
 
         byte[] b_nome = new byte[TamanhoAluno.LENGTH_NOME];
@@ -55,7 +65,7 @@ class ConversorAluno {
         buf.get( b_email );
         String email = new String( b_email );
 
-        Aluno a = new Aluno( matricula, nome.trim(), endereco.trim(), curso );
+        Aluno a = new Aluno( matricula, nome, endereco, curso );
         a.setTelefone( telefone );
         a.setEmail( email );
 
