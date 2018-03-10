@@ -19,6 +19,7 @@ public class MigracaoBrent {
 		sequencial = new OrganizadorSequencial( dbPath + "enem_aleat.db" );
 		brent = new OrganizadorBrent( dbPath + "enem_brent.db" );
 
+		// /*
 		for( int i = 0; i < 7603290; i++ ) {
 			
 			long inicio = System.currentTimeMillis();
@@ -26,11 +27,17 @@ public class MigracaoBrent {
 			long fim = System.currentTimeMillis();
 			total_seq += fim -inicio;
 			
+			System.out.println( "Laço: " + i + "\nAluno: " + aluno.getMatricula() );
+			
 			inicio = System.currentTimeMillis();
 			brent.addAluno( aluno );
 			fim = System.currentTimeMillis();
 			total_brent += fim -inicio;
 		}
+		// */
+		
+		//Aluno aluno = sequencial.getAluno( 19497493 );
+		//brent.addAluno( aluno );
 		
 		System.out.println( "Tempo de leitura: " + total_seq + "\nTempo de escrita: " + total_brent );
 	}
