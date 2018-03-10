@@ -86,7 +86,7 @@ public class Aluno implements Comparable<Object>, TamanhoAluno {
 	
 	public String toString() {
 		
-		return "Matrícula: " + matric + "; Nome: " + nome + "; Endereço: " + endereco + "\n" +
-			   "Curso: " + curso + "; Telefone: " + telefone + "; E-mail: " + email;
+		return "[Matrícula=" + matric + " Nome=" + nome + " Endereço=" + endereco +
+			   " Curso=" + curso + " Telefone=" + telefone + " E-mail=" + email + "]";
 	}
 }
