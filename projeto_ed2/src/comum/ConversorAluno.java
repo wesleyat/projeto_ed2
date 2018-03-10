@@ -18,7 +18,7 @@ class ConversorAluno {
     	
         // O tamanho do buffer será sempre igual ao tamanho, em bytes, de todos os campos
     	// da classe Aluno somados
-        ByteBuffer buf = ByteBuffer.allocate( TamanhoAluno.LENGTH_ALUNO );
+        ByteBuffer buf = ByteBuffer.allocate( TamanhoAluno.LENGTH );
 
         buf.putLong( a.getMatricula() );
         buf.put( a.getNome().getBytes() );
