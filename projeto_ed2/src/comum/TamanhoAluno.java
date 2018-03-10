@@ -17,5 +17,5 @@ public interface TamanhoAluno {
     public static final int LENGTH_FONE		= 20;
     public static final int LENGTH_CURSO	= 2;
     public static final int LENGTH_MAIL		= 90;
-    public static final int LENGTH_ALUNO	= LENGTH_MATRIC + LENGTH_NOME + LENGTH_ENDER + LENGTH_FONE + LENGTH_CURSO + LENGTH_MAIL;
+    public static final int LENGTH	= LENGTH_MATRIC + LENGTH_NOME + LENGTH_ENDER + LENGTH_FONE + LENGTH_CURSO + LENGTH_MAIL;
 }
