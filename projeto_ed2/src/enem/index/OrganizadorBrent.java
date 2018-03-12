@@ -1,6 +1,7 @@
 package enem.index;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -11,65 +12,31 @@ import comum.IFileOrganizer;
 
 public class OrganizadorBrent implements IFileOrganizer {
 	
-	private static int NUM_OF_REC = 10000019;
+	private static int MAX_RECORDS = 10000019;
 	
 	private File file;
-	private FileChannel channel;
-	private RandomAccessFile rf;
+	private FileChannel in, 
+						out;
+	private RandomAccessFile rfIn,
+							 rfOut;
 	private ByteBuffer buffer;
+	
 	
 	public OrganizadorBrent( String fileName ) {
 		
+		buffer = ByteBuffer.allocate( Aluno.LENGTH );
 		file = new File( fileName );
 		
 		try {
 			if( !file.exists() )
 				file.createNewFile();
+			
+			rfIn = new RandomAccessFile( file, "r" );
+			rfOut = new RandomAccessFile( file, "rw" );
+			in = rfIn.getChannel();
+			out = rfOut.getChannel();
 		}
 		catch( IOException e ) { e.printStackTrace(); }
-	}
-
-	@Override
-	public void addAluno( Aluno p ) {
-		
-		long position = getAlunoPosition( p.getMatricula() );
-		
-		if( position < 0 ) { // Verifica se o registro já não existe
-			
-			try {
-				rf = new RandomAccessFile( file, "rw" );
-				channel = rf.getChannel();
-				buffer = ByteBuffer.allocate( Aluno.LENGTH );
-				position = hash( p.getMatricula() ) * ( long )buffer.capacity();
-				int qtdBytes = channel.read( buffer, position );
-				
-				if( qtdBytes > -1 ) { // Verifica se existe registro na posição lida
-					
-					long matBuffer = buffer.getLong( 0 );
-
-					if( matBuffer > 0 ) { // Verifica se a posição lida não é de registro excluído
-						
-						long custoP			= calculaCustoAcesso( p.getMatricula(), position ),
-							custoMatBuffer	= calculaCustoAcesso( matBuffer, position );
-						
-						if( custoP > custoMatBuffer ) {
-							
-							buffer.position( 0 );
-							channel.write( buffer, position + ( ( custoMatBuffer -1L ) * ( long )buffer.capacity() ) );
-						}
-						else
-							position += ( custoP - 1L ) * ( long )buffer.capacity();
-					}
-				}
-								
-				buffer = p.toByteBuffer();
-				
-				channel.write( buffer, position );
-				channel.close();
-				rf.close();
-			}
-			catch( IOException e ) { e.printStackTrace(); }
-		}
 	}
 
 	@Override
@@ -80,63 +47,22 @@ public class OrganizadorBrent implements IFileOrganizer {
 		if( position < 0 )
 			return null;
 		
-		try {
-			rf = new RandomAccessFile( file, "r" );
-			channel = rf.getChannel();
-			
-			buffer = ByteBuffer.allocate( Aluno.LENGTH );
-			channel.read( buffer, position );
-			channel.close();
-			rf.close();
-		}
+		buffer.position( 0 );
+		
+		try { in.read( buffer, position ); }
 		catch( IOException e ) { e.printStackTrace(); }
 		
-		Aluno aluno = new Aluno( buffer );
-		
-		return aluno;
+		return new Aluno( buffer );
 	}
-
-	@Override
-	public Aluno delAluno( long matricula ) {
-		
-		Aluno aluno = getAluno( matricula );
-		
-		if( aluno != null ) {
-			
-			long position = getAlunoPosition( matricula );
-			
-			try {
-				rf = new RandomAccessFile( file, "rw" );
-				channel = rf.getChannel();	
-				buffer = ByteBuffer.allocate( Aluno.LENGTH );
-				
-				buffer.putLong( -1 );
-				buffer.position( 0 );
-				channel.write( buffer, position );
-				channel.close();
-				rf.close();
-			}
-			catch( IOException e ) { e.printStackTrace(); }
-		}
-		
-		return aluno;
-	}
-	
-	private long hash( long chave ) { return chave % ( long )NUM_OF_REC; }
-	
-	private long inc( long chave ) { return ( chave % ( ( long )NUM_OF_REC -2L ) ) +1L; }
 	
 	private long getAlunoPosition( long matricula ) {
 		
-		long position = hash( matricula ) * ( long )Aluno.LENGTH, // position é do arquivo, não confundir com o do buffer
-			 incremento = inc( matricula ) * ( long )Aluno.LENGTH; // A multiplicação por LENGTH é para evitar que um registro seja inserido no meio de outro
+		long position = getNextPosition( matricula, -1, 0 ); // position é do arquivo, não confundir com o do buffer
 		
-		try {
-			rf = new RandomAccessFile( file, "r" );
-			channel = rf.getChannel();
-			buffer = ByteBuffer.allocate( Aluno.LENGTH );
-				
-			while( channel.read( buffer, position ) > -1 ) { // Se retornar -1, não existe dado na posição
+		buffer.position( 0 );
+		
+		try {				
+			while( in.read( buffer, position ) > -1 ) { // Se retornar -1, não existe dado na posição
 				
 				long mat = buffer.getLong( 0 );
 				
@@ -146,52 +72,139 @@ public class OrganizadorBrent implements IFileOrganizer {
 				if( matricula == mat )
 					return position;
 				
-				position += incremento;
-				
-				if( position > ( long )NUM_OF_REC * ( long )Aluno.LENGTH ) {
-					
-					long diff = position -( ( long )NUM_OF_REC * ( long )Aluno.LENGTH );
-					position = 0L + diff;
-				}
+				position = getNextPosition( matricula, position, 0 );
 				
 				buffer.position( 0 );
 			}
-			
-			channel.close();
-			rf.close();
 		}
 		catch ( IOException e ) { e.printStackTrace();	}
 		
 		return -1;
 	}
 	
-	private long calculaCustoAcesso( long matricula, long position ) {
+	private long getNextPosition( long matricula, long position, long saltos ) {
 		
-		long qtdBytes = -1,
-			 inc = inc( matricula ) * ( long )Aluno.LENGTH;
+		long nxtPosition,
+			 incremento = saltos > 0 ? inc( matricula ) *saltos : inc( matricula );
+		
+		if( position < 0 )
+			nxtPosition = hash( matricula ) *( long )buffer.capacity(); // A multiplicação por capacity() é para evitar que um registro seja
+		else{ 															// inserido no meio de outro
+			saltos = saltos > -1 ? saltos : 0; 
+			nxtPosition = position +( incremento *saltos *( long )buffer.capacity() );
+		}
+		
+		if( nxtPosition > ( long )MAX_RECORDS *( long )buffer.capacity() ) {
+			
+			long diff = nxtPosition -( ( long )MAX_RECORDS *( long )buffer.capacity() );
+			nxtPosition = diff;
+		}
+		
+		return nxtPosition;
+	}
+	
+	@Override
+	public void addAluno( Aluno p ) {
 		
 		try {
-			RandomAccessFile rf = new RandomAccessFile( file, "r" );
-			FileChannel channel = rf.getChannel();
-			buffer = ByteBuffer.allocate( Aluno.LENGTH );
-			qtdBytes = channel.read( buffer, position );
+			long matBuffer;
 			
-			channel.close();
-			rf.close();
-		} 
+			buffer.position( 0 );
+			long position = getNextPosition( p.getMatricula(), -1, 0 ),
+				 matP = p.getMatricula();
+			int qtdBytes = in.read( buffer, position );
+			
+			if( qtdBytes > -1 ) { // Verifica se existe registro na posição lida
+				
+				matBuffer = buffer.getLong( 0 );
+				buffer.position( 0 );
+
+				if( matBuffer > 0 ) { // Verifica se a posição lida não é de registro excluído
+					
+					if( matBuffer == matP ) // Verifica se não é tentativa de duplicata
+						return;
+					
+					long custoP			= calculaCustoFuturoAcesso( p.getMatricula(), position ),
+						 custoMatBuffer	= calculaCustoFuturoAcesso( matBuffer, position );
+					
+					if( custoP > custoMatBuffer )
+						out.write( buffer, getNextPosition( matBuffer, position, custoMatBuffer -1 ) );
+					else														 // É (custo -1) porque parte do custo já foi quitado com o cáculo da
+						position = getNextPosition( matP, position, custoP -1 ); // primeira posição (a que já está ocupada)
+				}
+			}
+							
+			buffer = p.toByteBuffer();
+			
+			out.write( buffer, position );
+		}
+		catch( IOException e ) { e.printStackTrace(); }
+	}
+
+	private long calculaCustoFuturoAcesso( long matricula, long position ) {
+		
+		long qtdBytes = -1,
+			 inc = inc( matricula ) * ( long )buffer.capacity();
+
+		buffer.position( 0 );
+		
+		try { qtdBytes = in.read( buffer, position ); }
 		catch ( IOException e ) { e.printStackTrace(); }
 		
 		if( qtdBytes < 0 || buffer.getLong( 0 ) < 1 ) // Verifica se existia algum registro não vazio naquela posição
-			return 2; // Retorna 2 porque, se precisou calcular o custo, o registro já não vai ser inserido na primeira posição checada
+			return 1L;
 		
-		return 1L + calculaCustoAcesso( matricula, position + inc );
+		return 1L + calculaCustoFuturoAcesso( matricula, position + inc );
+	}
+	
+	@Override
+	public Aluno delAluno( long matricula ) {
+		
+		Aluno aluno = getAluno( matricula );
+		
+		if( aluno != null ) {
+			
+			long position = getAlunoPosition( matricula );
+			
+			buffer.position( 0 );
+			buffer.putLong( -1 );
+			buffer.position( 0 );
+			
+			try { out.write( buffer, position ); }
+			catch( IOException e ) { e.printStackTrace(); }
+		}
+		
+		return aluno;
+	}
+	
+	public void finish() {
+		
+		try {
+			in.close();
+			out.close();
+			rfIn.close();
+			rfOut.close();
+		} 
+		catch (IOException e) { e.printStackTrace(); }
 	}
 	
 	public boolean hasDatabase() { return file.exists(); }
+	
+	private long hash( long chave ) { return chave % ( long )MAX_RECORDS; }
+	
+	private long inc( long chave ) { return ( chave % ( ( long )MAX_RECORDS -2L ) ) +1L; }
 	
 	public void moveDatabase( String newPath ) {
 		
 		file.renameTo( new File( newPath ) );
 		file = new File( newPath );
+		
+		try {
+			rfIn = new RandomAccessFile( file, "r" );
+			rfOut = new RandomAccessFile( file, "rw" );
+			in = rfIn.getChannel();
+			out = rfOut.getChannel();
+		}
+		catch ( FileNotFoundException e ) { e.printStackTrace(); }
 	}
 }

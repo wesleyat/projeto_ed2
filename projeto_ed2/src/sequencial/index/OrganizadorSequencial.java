@@ -1,6 +1,7 @@
 package sequencial.index;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -11,17 +12,27 @@ import comum.IFileOrganizer;
 
 public class OrganizadorSequencial implements IFileOrganizer {
 
-	File file;
-	FileChannel channel;
-	RandomAccessFile rf;
+	private File file;
+	private FileChannel in,
+				out;
+	private RandomAccessFile rfIn,
+							 rfOut;
+	private ByteBuffer buffer;
 	
 	
 	public OrganizadorSequencial( String fileName ) {
 		
+		buffer = ByteBuffer.allocate( Aluno.LENGTH );
 		file = new File( fileName );
 		
 		try {
-			if( !file.exists() ) file.createNewFile();
+			if( !file.exists() ) 
+				file.createNewFile();
+			
+			rfIn = new RandomAccessFile( file, "r" );
+			rfOut = new RandomAccessFile( file, "rw" );
+			in = rfIn.getChannel();
+			out = rfOut.getChannel();
 		}
 		catch( IOException e ) { e.printStackTrace(); }
 	}
@@ -33,23 +44,20 @@ public class OrganizadorSequencial implements IFileOrganizer {
 		
 		if( position < 0 ) {
 
-			ByteBuffer buffer = p.toByteBuffer();
+			buffer = p.toByteBuffer();
 			
 			try {
-				rf = new RandomAccessFile( file, "rw" );
-				channel = rf.getChannel();
-
 				long matricula = p.getMatricula();
 				
 				do {
 					ByteBuffer buf = ByteBuffer.allocate( Aluno.LENGTH );
-					channel.read( buf );
-					position = channel.position();
+					in.read( buf );
+					position = in.position();
 					long mat = buf.getLong( 0 ); // Explicitando a posição do início da leitura porque, neste momento, position está no final do buffer
 					
 					if( mat > matricula ) {
 						
-						channel.write( buffer, position -buffer.capacity() ); // Escreve na posição do primeiro byte do registro
+						out.write( buffer, position -buffer.capacity() ); // Escreve na posição do primeiro byte do registro
 						matricula = mat; // Atualiza a variável matricula para a próxima comparação
 						buf.flip();
 						buffer = buf;
@@ -57,9 +65,9 @@ public class OrganizadorSequencial implements IFileOrganizer {
 				}
 				while ( position < file.length() ); // Encerra o loop ao final do arquivo
 				
-				channel.write( buffer ); 
-				channel.close();
-				rf.close();
+				out.write( buffer ); 
+				in.close();
+				rfIn.close();
 			}
 			catch( IOException e ) { e.printStackTrace(); }
 		}
@@ -88,22 +96,18 @@ public class OrganizadorSequencial implements IFileOrganizer {
 			aluno = getAlunoByPosition( position );
 			
 			try {
-				rf = new RandomAccessFile( file, "rw" );
-				channel = rf.getChannel();
-				channel.position( position * Aluno.LENGTH );
-				ByteBuffer buffer = ByteBuffer.allocate( Aluno.LENGTH );
+				in.position( position * buffer.capacity() );
+				buffer.position( 0 );
 				
-				while( channel.read( buffer, position +buffer.capacity() ) > -1 ) { // Lê o próximo registro, apartir do seu primeiro byte, sem alterar channel.position
+				while( in.read( buffer, position +buffer.capacity() ) > -1 ) { // Lê o próximo registro, apartir do seu primeiro byte, sem alterar channel.position
 				
 					buffer.flip();
-					channel.write( buffer ); // Sobrescreve o conteúdo de channel.position, avançando para o primeiro byte do próximo registro
+					out.write( buffer ); // Sobrescreve o conteúdo de channel.position, avançando para o primeiro byte do próximo registro
 					buffer.flip();
-					position = channel.position();
+					position = in.position();
 				}
 				
-				channel.truncate( position ); // Remove o último registro, que é igual ao penúltimo.
-				channel.close();
-				rf.close();
+				in.truncate( position ); // Remove o último registro, que é igual ao penúltimo.
 			}
 			catch( IOException e ) { e.printStackTrace(); }
 		}
@@ -114,15 +118,12 @@ public class OrganizadorSequencial implements IFileOrganizer {
 	public long getAlunoPosition( long matricula ) {
 		
 		long pos = -1;
+		long mat;
 		
 		try {
-			rf = new RandomAccessFile( file, "r" );
-			channel = rf.getChannel();
-			long mat;
-		
 			do {
-				ByteBuffer buffer = ByteBuffer.allocate( Aluno.LENGTH );
-				channel.read( buffer );
+				buffer.position( 0 );
+				in.read( buffer );
 				mat = buffer.getLong( 0 );
 				
 				//if( mat > matricula ) // // Otimizando: como o arquivo é ordenado em ordem crescente, se mat > matricula não precisa mais procurar
@@ -130,14 +131,11 @@ public class OrganizadorSequencial implements IFileOrganizer {
 				
 				if( matricula == mat ) {
 				
-					pos = ( channel.position() -( long )buffer.capacity() ) / ( long )buffer.capacity();
+					pos = ( in.position() -( long )buffer.capacity() ) / ( long )buffer.capacity();
 					break;
 				}
 			}
 			while( mat > 0 );
-			
-			channel.close();
-			rf.close();
 		}
 		catch( IOException e ) { e.printStackTrace(); }
 		
@@ -147,22 +145,26 @@ public class OrganizadorSequencial implements IFileOrganizer {
 	public Aluno getAlunoByPosition( long position ) {
 
 		Aluno aluno = null;
-		ByteBuffer buffer = ByteBuffer.allocate( Aluno.LENGTH );
+		buffer.position( 0 );
 		
-		try {
-			rf = new RandomAccessFile( file, "r" );
-			channel = rf.getChannel();
-			
-			channel.position( position * buffer.capacity() ); // Permite usar valores unitários para position, mas deslocar-se pelo arquivo de registro em registro
-			channel.read( buffer );
-			channel.close();
-			rf.close();
-		}
+		// Permite usar valores unitários para position, mas deslocar-se pelo arquivo de registro em registro
+		try { in.read( buffer, position * buffer.capacity() ); }
 		catch( IOException e ) { e.printStackTrace(); }
 		
 		aluno = new Aluno( buffer );
 		
 		return aluno;
+	}
+	
+	public void finish() {
+		
+		try {
+			in.close();
+			out.close();
+			rfIn.close();
+			rfOut.close();
+		} 
+		catch (IOException e) { e.printStackTrace(); }
 	}
 	
 	public boolean hasDatabase() { return file.exists(); }
@@ -171,5 +173,13 @@ public class OrganizadorSequencial implements IFileOrganizer {
 		
 		file.renameTo( new File( newPath ) );
 		file = new File( newPath );
+		
+		try {
+			rfIn = new RandomAccessFile( file, "r" );
+			rfOut = new RandomAccessFile( file, "rw" );
+			in = rfIn.getChannel();
+			out = rfOut.getChannel();
+		}
+		catch ( FileNotFoundException e ) { e.printStackTrace(); }
 	}
 }

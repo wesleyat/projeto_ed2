@@ -39,6 +39,9 @@ public class MigracaoBrent {
 		//Aluno aluno = sequencial.getAluno( 19497493 );
 		//brent.addAluno( aluno );
 		
+		brent.finish();
+		sequencial.finish();
+		
 		System.out.println( "Tempo de leitura: " + total_seq + "\nTempo de escrita: " + total_brent );
 	}
 
