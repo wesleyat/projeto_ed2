@@ -62,7 +62,7 @@ public class OrganizadorBrent extends GenericOrganizador implements IFileOrganiz
 			nxtPosition = hash( matricula ) *( long )buffer.capacity(); // A multiplicação por capacity() é para evitar que um registro seja
 		else{ 															// inserido no meio de outro
 			saltos = saltos > -1 ? saltos : 0; 
-			nxtPosition = position +( incremento *saltos *( long )buffer.capacity() );
+			nxtPosition = position +( incremento *( long )buffer.capacity() );
 		}
 		
 		if( nxtPosition > ( long )MAX_RECORDS *( long )buffer.capacity() ) {
