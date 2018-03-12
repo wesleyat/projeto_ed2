@@ -1,43 +1,14 @@
 package enem.index;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 import comum.Aluno;
+import comum.GenericOrganizador;
 import comum.IFileOrganizer;
 
-public class OrganizadorBrent implements IFileOrganizer {
+public class OrganizadorBrent extends GenericOrganizador implements IFileOrganizer {
 	
-	private static int MAX_RECORDS = 10000019;
-	
-	private File file;
-	private FileChannel in, 
-						out;
-	private RandomAccessFile rfIn,
-							 rfOut;
-	private ByteBuffer buffer;
-	
-	
-	public OrganizadorBrent( String fileName ) {
-		
-		buffer = ByteBuffer.allocate( Aluno.LENGTH );
-		file = new File( fileName );
-		
-		try {
-			if( !file.exists() )
-				file.createNewFile();
-			
-			rfIn = new RandomAccessFile( file, "r" );
-			rfOut = new RandomAccessFile( file, "rw" );
-			in = rfIn.getChannel();
-			out = rfOut.getChannel();
-		}
-		catch( IOException e ) { e.printStackTrace(); }
-	}
+	public OrganizadorBrent( String fileName ) { super( fileName ); }
 
 	@Override
 	public Aluno getAluno( long matricula ) {
@@ -177,34 +148,7 @@ public class OrganizadorBrent implements IFileOrganizer {
 		return aluno;
 	}
 	
-	public void finish() {
-		
-		try {
-			in.close();
-			out.close();
-			rfIn.close();
-			rfOut.close();
-		} 
-		catch (IOException e) { e.printStackTrace(); }
-	}
-	
-	public boolean hasDatabase() { return file.exists(); }
-	
 	private long hash( long chave ) { return chave % ( long )MAX_RECORDS; }
 	
 	private long inc( long chave ) { return ( chave % ( ( long )MAX_RECORDS -2L ) ) +1L; }
-	
-	public void moveDatabase( String newPath ) {
-		
-		file.renameTo( new File( newPath ) );
-		file = new File( newPath );
-		
-		try {
-			rfIn = new RandomAccessFile( file, "r" );
-			rfOut = new RandomAccessFile( file, "rw" );
-			in = rfIn.getChannel();
-			out = rfOut.getChannel();
-		}
-		catch ( FileNotFoundException e ) { e.printStackTrace(); }
-	}
 }
