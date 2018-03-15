@@ -95,6 +95,8 @@ public class OrganizadorSequencial extends GenericOrganizador implements IFileOr
 		long mat;
 		
 		try {
+			in.position( 0 );
+			
 			do {
 				buffer.position( 0 );
 				in.read( buffer );
