@@ -7,8 +7,8 @@ import sequencial.index.OrganizadorSequencial;
 
 public class MigracaoBrent {
 	
-	OrganizadorSequencial sequencial;
-	OrganizadorBrent brent;
+	private OrganizadorSequencial sequencial;
+	private OrganizadorBrent brent;
 	
 	public MigracaoBrent() {
 		
@@ -19,8 +19,7 @@ public class MigracaoBrent {
 		sequencial = new OrganizadorSequencial( dbPath + "enem_aleat.db" );
 		brent = new OrganizadorBrent( dbPath + "enem_brent.db" );
 
-		// /*
-		for( int i = 0; i < 7603290; i++ ) {
+		for( int i = 0; i < 7603290; i++ ) {			
 			
 			long inicio = System.currentTimeMillis();
 			Aluno aluno = sequencial.getAlunoByPosition( i );
@@ -34,10 +33,6 @@ public class MigracaoBrent {
 			fim = System.currentTimeMillis();
 			total_brent += fim -inicio;
 		}
-		// */
-		
-		//Aluno aluno = sequencial.getAluno( 19497493 );
-		//brent.addAluno( aluno );
 		
 		brent.finish();
 		sequencial.finish();
